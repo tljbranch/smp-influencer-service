@@ -1,0 +1,67 @@
+service: influencer-service
+
+frameworkVersion: ">=1.1.0 <2.58.0"
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  environment:
+    T_INFLUENCERS: T_INFLUENCERS
+  region: ap-southeast-1  
+  lambdaHashingVersion: 20201221
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+      Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/T_INFLUENCERS*"
+
+functions:
+  influencerSubmission:
+    handler: api/influencer.submit
+    memorySize: 128
+    description: Submit influencer information.
+    events:
+      - http: 
+          path: influencers
+          method: post
+          cors: true
+  listInfluencers:
+    handler: api/influencer.list
+    memorySize: 128
+    description: List all influencers
+    events:
+      - http: 
+          path: influencers
+          method: get
+          cors: true     
+  influencerDetails:
+    handler: api/influencer.get
+    events:
+      - http:
+          path: influencers/{id}
+          method: get
+          cors: true             
+
+resources:
+  Resources:
+    tableInfluencers:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: "INFLUENCERS_ID"
+            AttributeType: "S"   
+        KeySchema:
+          -
+            AttributeName: "INFLUENCERS_ID"
+            KeyType: "HASH"
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        StreamSpecification:
+          StreamViewType: "NEW_IMAGE"
+        TableName: ${self:provider.environment.T_INFLUENCERS}
